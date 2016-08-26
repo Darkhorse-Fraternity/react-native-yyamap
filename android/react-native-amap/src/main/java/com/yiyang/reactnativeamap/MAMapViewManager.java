@@ -12,8 +12,16 @@ import com.amap.api.maps2d.MapView;
 import com.amap.api.maps2d.model.CameraPosition;
 import com.amap.api.maps2d.model.CircleOptions;
 import com.amap.api.maps2d.model.LatLng;
+import com.amap.api.maps2d.AMap.OnCameraChangeListener;
+
+import com.amap.api.maps2d.model.Marker;
+import com.amap.api.maps2d.model.MarkerOptions;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.uimanager.SimpleViewManager;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.annotations.ReactProp;
@@ -24,7 +32,7 @@ import java.util.List;
 /**
  * Created by yiyang on 16/3/1.
  */
-public class MAMapViewManager extends SimpleViewManager<ReactMapView> {
+public class MAMapViewManager extends SimpleViewManager<ReactMapView> implements OnCameraChangeListener {
     public static final String RCT_CLASS = "RCTAMap";
 
     private ReactMapView mMapView;
@@ -47,13 +55,25 @@ public class MAMapViewManager extends SimpleViewManager<ReactMapView> {
         return mMapView;
     }
 
-    public ReactMapView getMapView() {
+    public ReactMapView ReactMapView () {
         return mMapView;
     }
 
     @ReactProp(name="showsUserLocation", defaultBoolean = false)
     public void showsUserLocation(MapView mapView, Boolean show) {
         mapView.getMap().setMyLocationEnabled(show);
+    }
+
+    @ReactProp(name="showCenterMarker", defaultBoolean = false)
+    public void showCenterMarker(MapView mapView, Boolean show) {
+        mapView.getMap().setOnCameraChangeListener(this);
+        LatLng latLng = new LatLng(39.906901,116.397972);
+        final Marker marker = mapView.getMap().addMarker(new MarkerOptions().
+                position(latLng).
+                title("北京").
+                snippet("DefaultMarker"));
+        marker.setPositionByPixels(mapView.getWidth() / 2,
+                mapView.getHeight() / 2);
     }
 
     @ReactProp(name="showsCompass", defaultBoolean = false)
@@ -101,6 +121,7 @@ public class MAMapViewManager extends SimpleViewManager<ReactMapView> {
             ReactMapMarker marker = new ReactMapMarker(this.mContext);
             marker.buildMarker(annotation);
             markers.add(marker);
+
         }
 
         mapView.setMarker(markers);
@@ -148,5 +169,36 @@ public class MAMapViewManager extends SimpleViewManager<ReactMapView> {
                     .build();
             mapView.getMap().moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
         }
+    }
+
+    private void sendEvent(String eventName,
+                           @javax.annotation.Nullable WritableMap params) {
+        if (mContext != null) {
+            ReactContext reactContext = (ReactContext)mContext;
+            reactContext
+                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                    .emit(eventName, params);
+        }
+    }
+
+    @Override
+    public void onCameraChange(CameraPosition cameraPosition) {
+        LatLng target = cameraPosition.target;
+        if (cameraPosition != null) {
+            sendEvent("onCameraChangedAmap", amapLocationToObject(cameraPosition));
+        }
+    }
+
+    private WritableMap amapLocationToObject(CameraPosition cameraPosition) {
+        WritableMap map = Arguments.createMap();
+        LatLng pos = cameraPosition.target;
+        map.putDouble("centerLantitude", pos.latitude);
+        map.putDouble("centerLongitude", pos.longitude);
+        return map;
+    }
+
+    @Override
+    public void onCameraChangeFinish(CameraPosition cameraPosition) {
+
     }
 }

@@ -91,7 +91,6 @@ public class ReactMapMarker {
         options.position(new LatLng(latitude, longitude));
 
         if (annotation.hasKey("draggable")) {
-
             boolean draggable = annotation.getBoolean("draggable");
             options.draggable(draggable);
         }

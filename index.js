@@ -1,7 +1,7 @@
 'use strict';
 
 import React, { Component, PropTypes } from 'react';
-import ReactNative from 'react-native';
+import {ReactNative, DeviceEventEmitter} from 'react-native';
 
 var {
     EdgeInsetsPropType,
@@ -31,6 +31,8 @@ export type MAAnnotationDragState = $Enum<{
   canceling: string;
   ending: string;
 }>;
+
+const onCenterLocationChanged = 'onCameraChangedAmap';
 // class Fuck extends React.Component {
 //     render() {
 //         return <View></View>;
@@ -56,7 +58,9 @@ const MAMapView= React.createClass({
      * key in Info.plist to enable geolocation, otherwise it will fail silently.
      */
     showsUserLocation: React.PropTypes.bool,
+    
 
+    showCenterMarker: React.PropTypes.bool,
     /**
      * If `true` the map will follow the user's location whenever it changes.
      * Note that this has no effect unless `showsUserLocation` is enabled.
@@ -322,6 +326,16 @@ const MAMapView= React.createClass({
      * @platform android
      */
     active: React.PropTypes.bool,
+  },
+  
+  
+  addEventListener(handler) {
+
+    const listener = DeviceEventEmitter.addListener(
+        onCenterLocationChanged,
+        handler,
+    );
+    return listener;
   },
 
   render: function() {
